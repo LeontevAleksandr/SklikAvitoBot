@@ -1,0 +1,57 @@
+"""
+Главный файл приложения - точка входа
+"""
+import sys
+import asyncio
+from pathlib import Path
+
+# Добавляем корневую директорию проекта в путь поиска модулей
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+from parsers.avito_parser import AvitoParser
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+
+async def main():
+    """Главная функция"""
+    logger.info("=" * 60)
+    logger.info("Запуск Avito Parser")
+    logger.info("=" * 60)
+    
+    try:
+        async with AvitoParser() as parser:
+            result = await parser.parse()
+            
+            logger.info("=" * 60)
+            logger.info("Результаты парсинга:")
+            logger.info(f"  Успешно: {result['success']}")
+            logger.info(f"  Капча: {'Да' if result['captcha_detected'] else 'Нет'}")
+            if result.get('visited_ads'):
+                logger.info(f"  Посещено объявлений: {len(result['visited_ads'])}")
+                for idx, ad in enumerate(result['visited_ads'], 1):
+                    status = "✅" if ad.get('success') else "❌"
+                    logger.info(f"    {idx}. {status} {ad['url']}")
+            if result.get('error'):
+                logger.error(f"  Ошибка: {result['error']}")
+            logger.info("=" * 60)
+    except Exception as e:
+        logger.error(f"Критическая ошибка при выполнении: {e}", exc_info=True)
+        return 1
+    
+    logger.info("Работа завершена успешно")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        exit_code = asyncio.run(main())
+        sys.exit(exit_code)
+    except KeyboardInterrupt:
+        logger.info("\n⚠️  Программа прервана пользователем (Ctrl+C)")
+        sys.exit(130)
+    except Exception as e:
+        logger.error(f"💥 Необработанная ошибка: {e}", exc_info=True)
+        sys.exit(1)
