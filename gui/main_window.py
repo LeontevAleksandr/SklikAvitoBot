@@ -2,15 +2,17 @@
 Главное окно приложения
 """
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                            QHBoxLayout, QSplitter, QFrame, QLabel)
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, 
+                            QTabWidget, QLabel)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
-from .widgets import ControlPanel, LogTextEdit, LogHandler, StatusBar
+
+# Импорты из новых модулей
+from .urls import UrlManagerTab
+from .settings import SettingsTab
+from .parsing import ParsingTab
 from .workers import ParserWorker
-from .styles import STYLES
-import logging
 
 
 class AvitoParserGUI(QMainWindow):
@@ -19,15 +21,15 @@ class AvitoParserGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.worker = None
+        self.current_settings = {}
         self.setup_ui()
-        self.setup_logging()
-        self.apply_styles()
+        self.connect_signals()
         
     def setup_ui(self):
         """Настройка пользовательского интерфейса"""
         self.setWindowTitle("Avito Parser - Накрутка просмотров")
-        self.setGeometry(100, 100, 1000, 700)
-        
+        self.setGeometry(100, 100, 1200, 800)
+
         # Центральный виджет
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -44,87 +46,91 @@ class AvitoParserGUI(QMainWindow):
         title_label.setStyleSheet("color: #88ccff; margin: 10px;")
         layout.addWidget(title_label)
         
-        # Разделитель
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("color: #555555;")
-        layout.addWidget(separator)
+        # TabWidget
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget)
         
-        # Splitter для разделения панели управления и логов
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        layout.addWidget(splitter)
+        # Создаем вкладки
+        self.setup_tabs()
         
-        # Верхняя панель - управление
-        control_panel = self.create_control_panel()
-        splitter.addWidget(control_panel)
+    def setup_tabs(self):
+        """Создает все вкладки приложения"""
         
-        # Нижняя панель - логи
-        log_panel = self.create_log_panel()
-        splitter.addWidget(log_panel)
+        # Вкладка парсинга
+        self.parsing_tab = ParsingTab()
+        self.tab_widget.addTab(self.parsing_tab, "🎯 Парсинг")
         
-        # Устанавливаем пропорции
-        splitter.setSizes([200, 500])
+        # Вкладка URLs
+        self.urls_tab = UrlManagerTab()
+        self.tab_widget.addTab(self.urls_tab, "🔗 Ссылки")
         
-        # Строка статуса
-        self.status_bar = StatusBar()
-        layout.addWidget(self.status_bar)
+        # Вкладка настроек
+        self.settings_tab = SettingsTab()
+        self.tab_widget.addTab(self.settings_tab, "⚙️ Настройки")
         
-    def create_control_panel(self):
-        """Создает панель управления"""
-        self.control_panel = ControlPanel()
-        self.control_panel.start_signal.connect(self.start_parsing)
-        self.control_panel.stop_signal.connect(self.stop_parsing)
-        return self.control_panel
+    def connect_signals(self):
+        """Подключает сигналы между компонентами"""
+        # Сигналы от вкладки парсинга
+        self.parsing_tab.start_signal.connect(self.start_parsing)
+        self.parsing_tab.stop_signal.connect(self.stop_parsing)
         
-    def create_log_panel(self):
-        """Создает панель логов"""
-        panel = QWidget()
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
+        # Сигналы от вкладки URLs
+        self.urls_tab.urls_updated.connect(self.on_urls_updated)
         
-        log_label = QLabel("Логи выполнения:")
-        log_label.setStyleSheet("font-weight: bold; color: #88ccff;")
-        layout.addWidget(log_label)
+        # Сигналы от вкладки настроек
+        # self.settings_tab.settings_changed.connect(self.on_settings_changed)
         
-        self.log_text = LogTextEdit()
-        layout.addWidget(self.log_text)
+    def on_urls_updated(self, urls):
+        """Обработчик обновления списка ссылок"""
+        self.add_log(f"📋 Обновлен список ссылок: {len(urls)} шт", "#888888")
         
-        return panel
+    # def on_settings_changed(self, settings):
+    #     """Обработчик изменения настроек"""
+    #     self.current_settings = settings
+    #     self.add_log("⚙️ Настройки обновлены", "#888888")
         
-    def setup_logging(self):
-        """Настройка системы логирования"""
-        log_handler = LogHandler(self.log_text)
-        log_handler.setLevel(logging.INFO)
-        
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.INFO)
-        root_logger.addHandler(log_handler)
-        
-    def apply_styles(self):
-        """Применяет стили к приложению"""
-        self.setStyleSheet(STYLES["dark_theme"])
-        self.control_panel.start_btn.setStyleSheet(STYLES["button_success"])
-        self.control_panel.stop_btn.setStyleSheet(STYLES["button_danger"])
-        
-    def start_parsing(self, settings):
+    def start_parsing(self):
         """Запуск парсинга"""
         try:
-            self.worker = ParserWorker(settings)
+            # Получаем текущие настройки
+            settings = self.settings_tab.get_all_settings()
+            
+            # Получаем ссылки из вкладки URLs
+            urls = self.urls_tab.get_all_urls()
+            
+            if not urls:
+                self.add_log("❌ Нет ссылок для обработки! Добавьте ссылки во вкладке '🔗 Ссылки'", "#FF4444")
+                return
+                
+            # Добавляем URLs в настройки
+            # settings['urls'] = urls
+            
+            # Сбрасываем статистику
+            self.parsing_tab.get_stats_panel().reset_stats()
+            
+            # Запускаем воркер
+            self.worker = ParserWorker(settings, urls)
             self.worker.log_signal.connect(self.add_log)
             self.worker.finished_signal.connect(self.parsing_finished)
-            self.worker.progress_signal.connect(self.status_bar.set_progress)
+            self.worker.stats_signal.connect(self.update_stats)
             self.worker.start()
             
-            proxy_settings = settings.get('proxy')
-            if proxy_settings and proxy_settings['server']:
-                self.add_log(f"Используется прокси: {proxy_settings['server']}")
+            # Логируем настройки
+            browser_settings = settings.get('browsers', {})
+            proxy_settings = settings.get('proxy', {})
+            
+            self.add_log(f"🚀 Запуск парсинга с настройками:", "#4CAF50")
+            self.add_log(f"   📊 Браузеров: {browser_settings.get('browser_count', 1)}", "#4CAF50")
+            self.add_log(f"   🔗 Ссылок: {len(urls)}", "#4CAF50")
+            
+            if proxy_settings and proxy_settings.get('server'):
+                self.add_log(f"   🌐 Прокси: {proxy_settings['server']}", "#4CAF50")
             else:
-                self.add_log("Прокси не используется")
+                self.add_log("   🌐 Прокси: не используется", "#FFAA00")
 
-            self.control_panel.set_running_state(True)
-            self.status_bar.set_status("Выполняется...", True)
-            self.add_log("🚀 Парсинг запущен", "#4CAF50")
+            # Обновляем UI
+            self.parsing_tab.set_running_state(True)
+            self.add_log("✅ Парсинг запущен успешно", "#4CAF50")
             
         except Exception as e:
             self.add_log(f"❌ Ошибка запуска: {e}", "#FF4444")
@@ -132,26 +138,43 @@ class AvitoParserGUI(QMainWindow):
             
     def stop_parsing(self):
         """Остановка парсинга"""
-        if self.worker and self.worker.isRunning():
+        if self.worker and hasattr(self.worker, 'stop') and self.worker.is_running():
             self.worker.stop()
-            self.worker.wait()
-            
-        self.parsing_finished(False)
-        self.add_log("⏹️ Парсинг остановлен пользователем", "#FFAA00")
+            # Не используем wait() здесь, т.к. поток остановится асинхронно
+            self.add_log("⏹️ Остановка парсинга...", "#FFAA00")
+        else:
+            self.parsing_finished(False)
+
         
     def parsing_finished(self, success):
         """Завершение парсинга"""
-        self.control_panel.set_running_state(False)
+        self.parsing_tab.set_running_state(False)
         
         if success:
-            self.status_bar.set_status("✅ Завершено успешно", False)
             self.add_log("✅ Работа завершена успешно", "#4CAF50")
         else:
-            self.status_bar.set_status("❌ Завершено с ошибками", False)
+            self.add_log("❌ Работа завершена с ошибками", "#FF4444")
+            
+    def update_stats(self, stats_type):
+        """Обновление статистики"""
+        stats_panel = self.parsing_tab.get_stats_panel()
+        
+        if stats_type == 'session':
+            stats_panel.increment_sessions()
+        elif stats_type == 'browser':
+            stats_panel.increment_browsers()
+        elif stats_type == 'view':
+            stats_panel.increment_views()
+        elif stats_type == 'success':
+            stats_panel.increment_success()
+        elif stats_type == 'error':
+            stats_panel.increment_errors()
+        elif stats_type == 'captcha':
+            stats_panel.increment_captchas()
             
     def add_log(self, message, color="#FFFFFF"):
         """Добавляет сообщение в лог"""
-        self.log_text.append_log(message, color)
+        self.parsing_tab.get_log_widget().append_log(message, color)
         
     def closeEvent(self, event):
         """Обработчик закрытия окна"""
