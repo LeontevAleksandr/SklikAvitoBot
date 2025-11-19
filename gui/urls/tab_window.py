@@ -122,9 +122,9 @@ class UrlManagerTab(QWidget):
         self.import_export.export_btn.setEnabled(len(urls) > 0)
         self.urls_updated.emit(urls)
         
-    def get_all_urls(self):
+    def get_urls(self):
         """Возвращает все URLs"""
-        return self.urls_list.get_all_urls()
+        return self.urls_list.get_urls()
         
     def has_urls(self):
         """Проверяет, есть ли URLs"""

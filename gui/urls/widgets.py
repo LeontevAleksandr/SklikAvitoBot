@@ -24,7 +24,7 @@ class UrlListWidget(QListWidget):
         if self.is_valid_url(url) and not self.is_duplicate(url):
             item = QListWidgetItem(url)
             self.addItem(item)
-            self.urls_changed.emit(self.get_all_urls())
+            self.urls_changed.emit(self.get_urls())
             return True
         return False
         
@@ -39,7 +39,7 @@ class UrlListWidget(QListWidget):
                 return True
         return False
         
-    def get_all_urls(self):
+    def get_urls(self):
         """Возвращает все URLs"""
         return [self.item(i).text() for i in range(self.count())]
         
@@ -47,7 +47,7 @@ class UrlListWidget(QListWidget):
         """Удаляет выбранные URLs"""
         for item in self.selectedItems():
             self.takeItem(self.row(item))
-        self.urls_changed.emit(self.get_all_urls())
+        self.urls_changed.emit(self.get_urls())
         
     def clear_all_urls(self):
         """Очищает все URLs"""

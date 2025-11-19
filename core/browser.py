@@ -3,13 +3,14 @@
 """
 import random
 from playwright.async_api import async_playwright, Browser, BrowserContext
+from utils.logger import setup_logger
+from config.settings_manager import settings_manager
 from config.settings import (
     HEADLESS, BROWSER_ARGS, USER_AGENTS, HTTP_HEADERS,
     VIEWPORT_MIN_WIDTH, VIEWPORT_MAX_WIDTH, VIEWPORT_MIN_HEIGHT, VIEWPORT_MAX_HEIGHT,
     GEO_LONGITUDE, GEO_LATITUDE, TIMEZONE,
     PROXY_SERVER, PROXY_USERNAME, PROXY_PASSWORD
 )
-from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -17,7 +18,8 @@ logger = setup_logger(__name__)
 class BrowserManager:
     """Менеджер для управления браузером"""
     
-    def __init__(self):
+    def __init__(self, settings=None):
+        self.settings = settings or settings_manager
         self.playwright = None
         self.browser: Browser = None
         self.context: BrowserContext = None
@@ -38,47 +40,53 @@ class BrowserManager:
         self.playwright = await async_playwright().start()
         
         # Генерируем случайные размеры окна
-        viewport_width = random.randint(VIEWPORT_MIN_WIDTH, VIEWPORT_MAX_WIDTH)
-        viewport_height = random.randint(VIEWPORT_MIN_HEIGHT, VIEWPORT_MAX_HEIGHT)
-        
+        viewport_width = random.randint(
+            self.settings.browser.viewport_min_width, 
+            self.settings.browser.viewport_max_width
+        )
+        viewport_height = random.randint(
+            self.settings.browser.viewport_min_height, 
+            self.settings.browser.viewport_max_height
+        )
+
         # Добавляем размер окна к аргументам
-        browser_args = BROWSER_ARGS.copy()
+        browser_args = self.settings.browser.browser_args.copy()
         browser_args.append(f'--window-size={viewport_width},{viewport_height}')
         
         # Запускаем браузер
         try:
             self.browser = await self.playwright.chromium.launch(
-                headless=HEADLESS,
+                headless=settings_manager.browser.headless,
                 channel="chrome",
                 args=browser_args
             )
         except Exception as e:
             logger.warning(f"Не удалось запустить Chrome, используем Chromium: {e}")
             self.browser = await self.playwright.chromium.launch(
-                headless=HEADLESS,
+                headless=settings_manager.browser.headless,
                 args=browser_args
             )
         
         # Настройка прокси
         proxy_config = None
-        if PROXY_SERVER:
-            proxy_config = {"server": PROXY_SERVER}
-            if PROXY_USERNAME and PROXY_PASSWORD:
-                proxy_config["username"] = PROXY_USERNAME
-                proxy_config["password"] = PROXY_PASSWORD
-            logger.info(f"Используется прокси: {PROXY_SERVER}")
+        if settings_manager.proxy.server:
+            proxy_config = {"server": settings_manager.proxy.server}
+            if settings_manager.proxy.username and settings_manager.proxy.password:
+                proxy_config["username"] = settings_manager.proxy.username
+                proxy_config["password"] = settings_manager.proxy.password
+            logger.info(f"Используется прокси: {settings_manager.proxy.server}")
         
         # Создаем контекст с рандомными параметрами
         self.context = await self.browser.new_context(
-            user_agent=random.choice(USER_AGENTS),
+            user_agent=random.choice(settings_manager.browser.user_agents),
             viewport={'width': viewport_width, 'height': viewport_height},
             screen={'width': viewport_width, 'height': viewport_height},
             locale='ru-RU',
-            timezone_id=TIMEZONE,
+            # timezone_id=settings_manager.geolocation.timezone,
             permissions=['geolocation'],
             geolocation={
-                'longitude': GEO_LONGITUDE,
-                'latitude': GEO_LATITUDE,
+                'longitude': settings_manager.geolocation.longitude,
+                'latitude': settings_manager.geolocation.latitude,
                 'accuracy': random.randint(5, 50)
             },
             color_scheme='light',
@@ -86,7 +94,7 @@ class BrowserManager:
             has_touch=False,
             is_mobile=False,
             java_script_enabled=True,
-            extra_http_headers=HTTP_HEADERS,
+            extra_http_headers=settings_manager.browser.http_headers,
             proxy=proxy_config
         )
         

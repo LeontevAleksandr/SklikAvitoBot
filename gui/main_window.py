@@ -7,8 +7,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
-
-# Импорты из новых модулей
+from config.settings_manager import settings_manager
 from .urls import UrlManagerTab
 from .settings import SettingsTab
 from .parsing import ParsingTab
@@ -92,24 +91,20 @@ class AvitoParserGUI(QMainWindow):
     def start_parsing(self):
         """Запуск парсинга"""
         try:
-            # Получаем текущие настройки
-            settings = self.settings_tab.get_all_settings()
-            
-            # Получаем ссылки из вкладки URLs
-            urls = self.urls_tab.get_all_urls()
+            # Назначаем текущие настройки
+            settings = self.settings_tab.get_settings()
+            urls = self.urls_tab.get_urls()
+            settings_manager.set_settings(settings, urls)
             
             if not urls:
                 self.add_log("❌ Нет ссылок для обработки! Добавьте ссылки во вкладке '🔗 Ссылки'", "#FF4444")
-                return
-                
-            # Добавляем URLs в настройки
-            # settings['urls'] = urls
+                return    
             
             # Сбрасываем статистику
             self.parsing_tab.get_stats_panel().reset_stats()
             
             # Запускаем воркер
-            self.worker = ParserWorker(settings, urls)
+            self.worker = ParserWorker()
             self.worker.log_signal.connect(self.add_log)
             self.worker.finished_signal.connect(self.parsing_finished)
             self.worker.stats_signal.connect(self.update_stats)
@@ -140,7 +135,6 @@ class AvitoParserGUI(QMainWindow):
         """Остановка парсинга"""
         if self.worker and hasattr(self.worker, 'stop') and self.worker.is_running():
             self.worker.stop()
-            # Не используем wait() здесь, т.к. поток остановится асинхронно
             self.add_log("⏹️ Остановка парсинга...", "#FFAA00")
         else:
             self.parsing_finished(False)

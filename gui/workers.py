@@ -5,6 +5,8 @@ import asyncio
 import sys
 from pathlib import Path
 from PyQt6.QtCore import QThread, pyqtSignal
+from parsers.avito_parser import AvitoParser
+import traceback
 
 # Добавляем корневую директорию проекта в путь поиска модулей
 project_root = Path(__file__).parent.parent
@@ -19,10 +21,8 @@ class ParserWorker(QThread):
     finished_signal = pyqtSignal(bool)  # success
     stats_signal = pyqtSignal(str)      # stats type: 'session', 'browser', etc.
     
-    def __init__(self, settings, urls):
+    def __init__(self):
         super().__init__()
-        self.settings = settings
-        self.urls = urls
         self._is_running = True
         
     def run(self):
@@ -44,38 +44,41 @@ class ParserWorker(QThread):
             
     async def _run_async(self):
         """Асинхронная задача"""
+        self.log_signal.emit("=" * 60, "#4CAF50")
+        self.log_signal.emit("Запуск Avito Parser (одиночный режим)", "#4CAF50")
+        self.log_signal.emit("=" * 60, "#4CAF50")
+        
         try:
-            # Эмулируем работу парсера
-            self.stats_signal.emit('session')
-            
-            browser_count = self.settings.get('browsers', {}).get('browser_count', 1)
-            
-            for browser_num in range(browser_count):
-                if not self._is_running:
-                    break
-                    
-                self.stats_signal.emit('browser')
-                self.log_signal.emit(f"🖥️ Запуск браузера {browser_num + 1}", "#4CAF50")
-                
-                # Обработка URLs для этого браузера
-                for url in self.urls:
-                    if not self._is_running:
-                        break
-                        
-                    self.stats_signal.emit('view')
-                    self.log_signal.emit(f"   📍 Переход по: {url}", "#888888")
-                    
-                    # Эмуляция работы
-                    await asyncio.sleep(1)
-                    
-                # Задержка между браузерами
-                if browser_num < browser_count - 1:
-                    delay = self.settings.get('browsers', {}).get('browser_start_delay', 30)
-                    self.log_signal.emit(f"⏰ Задержка {delay} сек до следующего браузера", "#FFAA00")
-                    await asyncio.sleep(delay)
-            
-            self.finished_signal.emit(True)
-            
+            async with AvitoParser() as parser:
+                result = await parser.parse()
+                self.log_signal.emit("=" * 60, "#4CAF50")
+                self.log_signal.emit("Результаты парсинга:", "#4CAF50")
+                self.log_signal.emit(f"  Успешно: {result['success']}", "#4CAF50")
+                self.log_signal.emit(f"  Капча: {'Да' if result['captcha_detected'] else 'Нет'}", "#4CAF50")
+                if result.get('visited_ads'):
+                    self.log_signal.emit("  Посещено объявлений: {len(result['visited_ads'])}", "#4CAF50")
+                    for idx, ad in enumerate(result['visited_ads'], 1):
+                        status = "✅" if ad.get('success') else "❌"
+                        self.log_signal.emit(f"    {idx}. {status} {ad['url']}", "#4CAF50")
+                if result.get('error'):
+                    self.log_signal.emit(f"  Ошибка: {result['error']}", "#FF4444")
+                self.log_signal.emit("=" * 60, "#4CAF50")
         except Exception as e:
-            self.log_signal.emit(f"Ошибка выполнения: {e}", "#FF4444")
+
+            error_traceback = traceback.format_exc()
+            self.log_signal.emit(f"❌ Критическая ошибка:", "#FF4444")
+            self.log_signal.emit(f"📋 Сообщение: {str(e)}", "#FF4444")
+            self.log_signal.emit(f"🔍 Traceback:", "#FF4444")
+
+            # Разбиваем traceback на строки и логируем каждую
+            for line in error_traceback.split('\n'):
+                if line.strip():
+                    self.log_signal.emit(f"   {line}", "#FF8888")
+            
             self.finished_signal.emit(False)
+
+            # self.log_signal.emit(f"Критическая ошибка при выполнении: {e}", "#FF4444")
+            self.finished_signal.emit(True)
+            return 1
+        self.log_signal.emit("Работа завершена успешно", "#4CAF50")
+        return 0

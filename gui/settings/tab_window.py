@@ -4,7 +4,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea
 from PyQt6.QtCore import pyqtSignal, Qt
 
-from .widgets import (ParserSettingsGroup, BrowserSettingsGroup, 
+from .widgets import (ParserSettingsGroup, MultiBrowserSettingsGroup, 
                      GeolocationSettings, ProxySettingsGroup)
 
 
@@ -34,8 +34,8 @@ class SettingsTab(QWidget):
         self.parser_group = ParserSettingsGroup()
         settings_layout.addWidget(self.parser_group)
         
-        self.browser_group = BrowserSettingsGroup()
-        settings_layout.addWidget(self.browser_group)
+        self.multibrowser_group = MultiBrowserSettingsGroup()
+        settings_layout.addWidget(self.multibrowser_group)
         
         self.geo_group = GeolocationSettings()
         settings_layout.addWidget(self.geo_group)
@@ -48,21 +48,11 @@ class SettingsTab(QWidget):
         scroll.setWidget(settings_widget)
         layout.addWidget(scroll)
         
-    def get_all_settings(self):
+    def get_settings(self):
         """Возвращает все настройки"""
         return {
-            **self.parser_group.get_parser_settings(),
-            'browsers': self.browser_group.get_browser_settings(),
-            'geolocation': self.geo_group.get_geolocation(),
-            'proxy': self.proxy_group.get_proxy_settings()
+            **self.parser_group.get_settings(),
+            'browsers': self.multibrowser_group.get_settings(),
+            'geolocation': self.geo_group.get_settings(),
+            'proxy': self.proxy_group.get_settings()
         }
-        
-    def load_proxy_from_env(self):
-        """Загружает настройки прокси из переменных окружения"""
-        import os
-        proxy_server = os.getenv('PROXY_SERVER', '')
-        proxy_username = os.getenv('PROXY_USERNAME', '')
-        proxy_password = os.getenv('PROXY_PASSWORD', '')
-        
-        if proxy_server:
-            self.proxy_group.set_proxy_settings(proxy_server, proxy_username, proxy_password)

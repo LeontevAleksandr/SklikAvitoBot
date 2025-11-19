@@ -6,7 +6,8 @@ import random
 from typing import List
 from parsers.avito_parser import AvitoParser
 from utils.logger import setup_logger
-from config.settings import BROWSERS_COUNT, BROWSER_START_DELAY
+# from config.settings import BROWSERS_COUNT, BROWSER_START_DELAY
+from config.settings_manager import settings_manager
 
 logger = setup_logger(__name__)
 
@@ -21,7 +22,7 @@ class MultiBrowserManager:
         Args:
             browsers_count: Количество браузеров (1-10)
         """
-        self.browsers_count = browsers_count or BROWSERS_COUNT
+        self.browsers_count = browsers_count or settings_manager.multi_browser.browser_count
         if self.browsers_count < 1:
             self.browsers_count = 1
         if self.browsers_count > 10:
@@ -77,12 +78,12 @@ class MultiBrowserManager:
         
         tasks = []
         
+        browser_start_delay = settings_manager.multi_browser.browser_start_delay
+
         # Создаем задачи для каждого браузера с задержкой
         for i in range(1, self.browsers_count + 1):
-            # Добавляем задержку между запусками
-            await asyncio.sleep(BROWSER_START_DELAY)
+            await asyncio.sleep(browser_start_delay)
             
-            # Создаем задачу
             task = asyncio.create_task(self.run_single_browser(i))
             tasks.append(task)
             

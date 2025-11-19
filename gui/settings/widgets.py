@@ -39,30 +39,30 @@ class ParserSettingsGroup(QGroupBox):
         # Задержки между сессиями
         delays_layout = QHBoxLayout()
         delays_layout.addWidget(QLabel("Задержка между сессиями (мин):"))
-        self.delay_min_spin = QSpinBox()
-        self.delay_min_spin.setRange(1, 60)
-        self.delay_min_spin.setValue(2)
-        delays_layout.addWidget(self.delay_min_spin)
+        self.min_delay_spin = QSpinBox()
+        self.min_delay_spin.setRange(1, 60)
+        self.min_delay_spin.setValue(2)
+        delays_layout.addWidget(self.min_delay_spin)
         
         delays_layout.addWidget(QLabel("до"))
-        self.delay_max_spin = QSpinBox()
-        self.delay_max_spin.setRange(1, 120)
-        self.delay_max_spin.setValue(10)
-        delays_layout.addWidget(self.delay_max_spin)
+        self.max_delay_spin = QSpinBox()
+        self.max_delay_spin.setRange(1, 120)
+        self.max_delay_spin.setValue(10)
+        delays_layout.addWidget(self.max_delay_spin)
         delays_layout.addStretch()
         layout.addLayout(delays_layout)
         
-    def get_parser_settings(self):
+    def get_settings(self):
         """Возвращает настройки парсера"""
         return {
             'mode': 'continuous' if self.mode_combo.currentText() == "Непрерывный режим" else 'single',
             'sessions': self.sessions_spin.value(),
-            'delay_min': self.delay_min_spin.value(),
-            'delay_max': self.delay_max_spin.value()
+            'min_delay': self.min_delay_spin.value(),
+            'max_delay': self.max_delay_spin.value()
         }
 
 
-class BrowserSettingsGroup(QGroupBox):
+class MultiBrowserSettingsGroup(QGroupBox):
     """Настройки браузеров"""
     
     def __init__(self):
@@ -94,7 +94,7 @@ class BrowserSettingsGroup(QGroupBox):
         browser_delay_layout.addStretch()
         layout.addLayout(browser_delay_layout)
         
-    def get_browser_settings(self):
+    def get_settings(self):
         """Возвращает настройки браузеров"""
         return {
             'browser_count': self.browsers_spin.value(),
@@ -141,13 +141,14 @@ class GeolocationSettings(QGroupBox):
         """Устанавливает координаты Москвы"""
         self.lat_input.setText("55.7558")
         self.lon_input.setText("37.6173")
+        # self.timezone.setText("Moscow")
         
-    def get_geolocation(self):
+    def get_settings(self):
         """Возвращает настройки геолокации"""
         try:
             lat = float(self.lat_input.text().strip())
             lon = float(self.lon_input.text().strip())
-            return {'latitude': lat, 'longitude': lon}
+            return {'latitude': lat, 'longitude': lon, 'timezone': ''}
         except ValueError:
             return None
 
@@ -206,7 +207,7 @@ class ProxySettingsGroup(QGroupBox):
         # Здесь можно добавить логику тестирования прокси
         print("Тестирование прокси...")
         
-    def get_proxy_settings(self):
+    def get_settings(self):
         """Возвращает настройки прокси"""
         if not self.proxy_check.isChecked():
             return None
@@ -217,7 +218,7 @@ class ProxySettingsGroup(QGroupBox):
             'password': self.proxy_password_input.text().strip()
         }
         
-    def set_proxy_settings(self, server, username="", password=""):
+    def set_settings(self, server, username="", password=""):
         """Устанавливает настройки прокси"""
         self.proxy_server_input.setText(server)
         self.proxy_username_input.setText(username)

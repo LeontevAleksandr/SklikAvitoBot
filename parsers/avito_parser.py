@@ -6,6 +6,7 @@ from core.stealth import apply_stealth
 from utils.helpers import random_delay, human_like_scroll, human_like_mouse_movement, random_clicks
 from utils.ip_checker import get_current_ip
 from utils.logger import setup_logger
+from config.settings_manager import settings_manager
 from config.settings import TARGET_URL, SCREENSHOTS_DIR, AD_URLS, AD_VIEW_TIME
 import asyncio
 
@@ -15,7 +16,7 @@ logger = setup_logger(__name__)
 class AvitoParser:
     """Парсер для сайта Avito"""
     
-    def __init__(self, url: str = TARGET_URL):
+    def __init__(self, url: str = settings_manager.parser.target_url):
         """
         Инициализация парсера
         
@@ -101,7 +102,7 @@ class AvitoParser:
             
             if captcha_present:
                 logger.warning("⚠️ ОБНАРУЖЕНА КАПЧА на главной странице!")
-                screenshot_path = SCREENSHOTS_DIR / "captcha_main_page.png"
+                screenshot_path = settings_manager.screenshots_dir / "captcha_main_page.png"
                 await page.screenshot(path=str(screenshot_path))
                 logger.info(f"Скриншот сохранен: {screenshot_path}")
                 await page.close()
@@ -113,11 +114,12 @@ class AvitoParser:
             await human_like_scroll(page)
             
             # ШАГ 2: Посещение объявлений
-            if AD_URLS:
-                logger.info(f"Шаг 2: Переход к объявлениям (найдено {len(AD_URLS)} URL)")
+            ad_urls = settings_manager.parser.ad_urls
+            if ad_urls:
+                logger.info(f"Шаг 2: Переход к объявлениям (найдено {len(ad_urls)} URL)")
                 
-                for idx, ad_url in enumerate(AD_URLS, 1):
-                    logger.info(f"Открытие объявления {idx}/{len(AD_URLS)}: {ad_url}")
+                for idx, ad_url in enumerate(ad_urls, 1):
+                    logger.info(f"Открытие объявления {idx}/{len(ad_urls)}: {ad_url}")
                     
                     try:
                         # Переход на объявление
@@ -139,8 +141,9 @@ class AvitoParser:
                         await human_like_scroll(page)
                         
                         # Просмотр объявления
-                        logger.info(f"Просмотр объявления {AD_VIEW_TIME} секунд...")
-                        await asyncio.sleep(AD_VIEW_TIME)
+                        ad_view_time = settings_manager.parser.ad_view_time
+                        logger.info(f"Просмотр объявления {ad_view_time} секунд...")
+                        await asyncio.sleep(ad_view_time)
                         
                         result["visited_ads"].append({
                             "url": ad_url,
@@ -155,7 +158,7 @@ class AvitoParser:
                             "error": str(e)
                         })
             else:
-                logger.info("Объявления для посещения не указаны в AD_URLS")
+                logger.info("Объявления для посещения не указаны в ad_urls")
             
             logger.info("Завершена работа со страницами")
             
@@ -168,7 +171,7 @@ class AvitoParser:
             
             # Сохраняем скриншот ошибки
             try:
-                screenshot_path = SCREENSHOTS_DIR / "error_screenshot.png"
+                screenshot_path = settings_manager.screenshots_dir / "error_screenshot.png"
                 await page.screenshot(path=str(screenshot_path))
                 logger.info(f"Скриншот ошибки сохранен: {screenshot_path}")
             except:
