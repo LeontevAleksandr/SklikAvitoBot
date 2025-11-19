@@ -10,15 +10,17 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from parsers.avito_parser import AvitoParser
+from core.multi_browser import run_multi_browser_mode
+from config.settings import BROWSERS_COUNT
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
-async def main():
-    """Главная функция"""
+async def run_single_browser_mode():
+    """Запуск одного браузера"""
     logger.info("=" * 60)
-    logger.info("Запуск Avito Parser")
+    logger.info("Запуск Avito Parser (одиночный режим)")
     logger.info("=" * 60)
     
     try:
@@ -43,6 +45,17 @@ async def main():
     
     logger.info("Работа завершена успешно")
     return 0
+
+
+async def main():
+    """Главная функция"""
+    # Выбираем режим работы в зависимости от настроек
+    if BROWSERS_COUNT > 1:
+        logger.info(f"🚀 Мультибраузерный режим: {BROWSERS_COUNT} браузеров")
+        return await run_multi_browser_mode()
+    else:
+        logger.info("🔵 Одиночный режим: 1 браузер")
+        return await run_single_browser_mode()
 
 
 if __name__ == "__main__":

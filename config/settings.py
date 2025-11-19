@@ -28,6 +28,10 @@ AD_URLS = [url.strip() for url in AD_URLS_STR.split(",") if url.strip()]
 # Время просмотра объявления (в секундах)
 AD_VIEW_TIME = int(os.getenv("AD_VIEW_TIME", "10"))
 
+# Мультибраузерный режим
+BROWSERS_COUNT = max(1, min(10, int(os.getenv("BROWSERS_COUNT", "1"))))  # От 1 до 10
+BROWSER_START_DELAY = int(os.getenv("BROWSER_START_DELAY", "2"))
+
 # Задержки
 MIN_DELAY = int(os.getenv("MIN_DELAY", "1000"))
 MAX_DELAY = int(os.getenv("MAX_DELAY", "3000"))
