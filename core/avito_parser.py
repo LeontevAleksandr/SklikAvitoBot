@@ -98,6 +98,9 @@ class AvitoParser:
                         await page.goto(ad_url, wait_until="domcontentloaded", timeout=30000)
                         logger.info(f"Объявление {idx} загружено")
                         
+                        # Минимальная задержка для загрузки метрик
+                        await asyncio.sleep(1)
+                        
                         # Проверка на капчу
                         if await self.check_captcha(page):
                             logger.warning(f"⚠️ КАПЧА на объявлении {idx}!")
@@ -105,6 +108,10 @@ class AvitoParser:
                             break
                         
                         logger.info(f"✅ Объявление {idx} открыто успешно")
+                        
+                        # Минимальный скролл (1 раз вниз) - засчитывает просмотр
+                        await page.evaluate("window.scrollBy(0, 300)")
+                        await asyncio.sleep(0.5)
                         
                         # Просмотр объявления
                         ad_view_time = settings_manager.parser.ad_view_time
