@@ -6,6 +6,7 @@ from core.stealth import apply_stealth
 from utils.logger import setup_logger
 from config.settings_manager import settings_manager
 import asyncio
+import random
 
 logger = setup_logger(__name__)
 
@@ -61,6 +62,31 @@ class AvitoParser:
             logger.error(f"Ошибка при проверке капчи: {e}")
             return False
     
+    async def random_scroll_during_view(self, page, duration: int):
+        """
+        Случайный скроллинг туда-сюда во время просмотра
+        
+        Args:
+            page: Объект страницы Playwright
+            duration: Длительность просмотра в секундах
+        """
+        start_time = asyncio.get_event_loop().time()
+        end_time = start_time + duration
+        
+        while asyncio.get_event_loop().time() < end_time:
+            # Случайное направление: вниз (положительное) или вверх (отрицательное)
+            direction = random.choice([1, -1])
+            
+            # Случайная величина скролла от 100 до 500 пикселей
+            scroll_amount = random.randint(100, 500) * direction
+            
+            # Выполняем скролл
+            await page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+            
+            # Случайная задержка от 1 до 3 секунд
+            delay = random.uniform(1.0, 3.0)
+            await asyncio.sleep(delay)
+    
     async def parse(self) -> dict:
         """
         Основной метод парсинга
@@ -109,14 +135,13 @@ class AvitoParser:
                         
                         logger.info(f"✅ Объявление {idx} открыто успешно")
                         
-                        # Минимальный скролл (1 раз вниз) - засчитывает просмотр
+                        # Начальный скролл вниз для активации
                         await page.evaluate("window.scrollBy(0, 300)")
-                        await asyncio.sleep(0.5)
                         
-                        # Просмотр объявления
+                        # Просмотр с рандомным скроллингом
                         ad_view_time = settings_manager.parser.ad_view_time
-                        logger.info(f"Просмотр объявления {ad_view_time} секунд...")
-                        await asyncio.sleep(ad_view_time)
+                        logger.info(f"Просмотр объявления {ad_view_time} сек с рандомным скроллом...")
+                        await self.random_scroll_during_view(page, ad_view_time)
                         
                         result["visited_ads"].append({
                             "url": ad_url,
