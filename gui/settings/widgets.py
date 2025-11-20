@@ -3,7 +3,9 @@
 """
 from PyQt6.QtWidgets import (QGroupBox, QVBoxLayout, QHBoxLayout, QLabel, 
                             QSpinBox, QLineEdit, QCheckBox, QPushButton,
-                            QComboBox)
+                            QComboBox, QMessageBox)
+
+from utils.ip_checker import get_current_ip
 
 
 class ParserSettingsGroup(QGroupBox):
@@ -226,8 +228,38 @@ class ProxySettingsGroup(QGroupBox):
         
     def test_proxy(self):
         """Тестирование прокси соединения"""
-        # Здесь можно добавить логику тестирования прокси
-        print("Тестирование прокси...")
+        server = self.proxy_server_input.text().strip()
+        username = self.proxy_username_input.text().strip()
+        password = self.proxy_password_input.text().strip()
+        
+        # Получаем IP без прокси
+        original_ip = get_current_ip()
+        
+        if server:
+            # Получаем IP через прокси
+            proxy_ip = get_current_ip(
+                proxy_server=server,
+                proxy_username=username if username else None,
+                proxy_password=password if password else None
+            )
+            
+            if proxy_ip != "unknown":
+                if original_ip != proxy_ip:
+                    QMessageBox.information(self, "✅ Прокси работает", 
+                        f"📍 Ваш IP: {original_ip}\n"
+                        f"🌐 IP через прокси: {proxy_ip}\n"
+                        f"✅ Прокси работает! IP изменился")
+                else:
+                    QMessageBox.warning(self, "⚠️ Внимание",
+                        f"📍 Ваш IP: {original_ip}\n"
+                        f"🌐 IP через прокси: {proxy_ip}\n"
+                        f"⚠️ Прокси не меняет IP")
+            else:
+                QMessageBox.critical(self, "❌ Ошибка", 
+                    "Прокси не работает. Проверьте настройки.")
+        else:
+            QMessageBox.information(self, "📍 Ваш IP", 
+                f"Ваш текущий IP: {original_ip}")
         
     def get_settings(self):
         """Возвращает настройки прокси"""

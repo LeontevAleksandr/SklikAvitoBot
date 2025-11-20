@@ -4,7 +4,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSplitter
 from PyQt6.QtCore import Qt, pyqtSignal
 
-from .widgets import ControlButtons, StatsPanel
+from .widgets import ControlButtons, InfoPanel, StatsPanel
 from ..widgets import LogTextEdit
 
 
@@ -34,6 +34,10 @@ class ParsingTab(QWidget):
         # Логи
         self.log_text = LogTextEdit()
         splitter.addWidget(self.log_text)
+
+        # Текущий IP
+        self.info_panel = InfoPanel()
+        layout.addWidget(self.info_panel)
         
         # Статистика
         self.stats_panel = StatsPanel()

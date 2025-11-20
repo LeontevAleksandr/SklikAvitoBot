@@ -2,7 +2,7 @@
 Виджеты для вкладки парсинга
 """
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                            QLabel, QGroupBox, QGridLayout)
+                            QLabel, QGroupBox, QGridLayout, QLineEdit)
 from PyQt6.QtCore import pyqtSignal
 
 
@@ -32,6 +32,40 @@ class ControlButtons(QGroupBox):
         """Устанавливает состояние кнопок"""
         self.start_btn.setEnabled(not running)
         self.stop_btn.setEnabled(running)
+
+
+class InfoPanel(QGroupBox):
+    """Панель текущей информации по IP"""
+    
+    def __init__(self):
+        super().__init__("Текущий IP")
+        self.setup_ui()
+        self.ip_change_count = 0
+        
+    def setup_ui(self):
+        layout = QGridLayout(self)
+        
+        # Текущий IP
+        self.sessions_label = QLabel("IP: Не определен")
+        layout.addWidget(self.sessions_label, 0, 0)
+
+        # Счетчик смен IP
+        self.browsers_label = QLabel("Смен IP: 0")
+        layout.addWidget(self.browsers_label, 0, 1)
+        
+    def set_ip(self, ip_address: str):
+        """Устанавливает текущий IP"""
+        self.ip_label.setText(f"IP: {ip_address}")
+        
+    def increment_ip_change(self):
+        """Увеличивает счетчик смен IP"""
+        self.ip_change_count += 1
+        self.change_count_label.setText(f"Смен IP: {str(self.ip_change_count)}")
+        
+    def reset_counter(self):
+        """Сбрасывает счетчик"""
+        self.ip_change_count = 0
+        self.change_count_label.setText("Смен IP: 0")
 
 
 class StatsPanel(QGroupBox):

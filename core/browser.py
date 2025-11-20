@@ -5,12 +5,7 @@ import random
 from playwright.async_api import async_playwright, Browser, BrowserContext
 from utils.logger import setup_logger
 from config.settings_manager import settings_manager
-from config.settings import (
-    HEADLESS, BROWSER_ARGS, USER_AGENTS, HTTP_HEADERS,
-    VIEWPORT_MIN_WIDTH, VIEWPORT_MAX_WIDTH, VIEWPORT_MIN_HEIGHT, VIEWPORT_MAX_HEIGHT,
-    GEO_LONGITUDE, GEO_LATITUDE, TIMEZONE,
-    PROXY_SERVER, PROXY_USERNAME, PROXY_PASSWORD
-)
+
 
 logger = setup_logger(__name__)
 
