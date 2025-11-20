@@ -27,6 +27,7 @@ class ProxySettings:
     server: str = None
     username: str = None
     password: str = None
+    rotation_url: str = None  # URL для ротации IP
 
 
 @dataclass
@@ -218,11 +219,13 @@ class SettingsManager:
             self.proxy.server = proxy_dict.get('server')
             self.proxy.username = proxy_dict.get('username', '')
             self.proxy.password = proxy_dict.get('password', '')
+            self.proxy.rotation_url = proxy_dict.get('rotation_url', '')
         else:
             # Если прокси отключен в GUI
             self.proxy.server = None
             self.proxy.username = None
             self.proxy.password = None
+            self.proxy.rotation_url = None
         
         
         # Остальные настройки парсера

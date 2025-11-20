@@ -192,6 +192,22 @@ class ProxySettingsGroup(QGroupBox):
         self.proxy_auth_layout.addWidget(self.proxy_password_input)
         layout.addLayout(self.proxy_auth_layout)
         
+        # Ротация IP через GET запрос
+        rotation_layout = QHBoxLayout()
+        self.rotation_check = QCheckBox("🔄 Ротация IP (GET запрос)")
+        self.rotation_check.setChecked(False)
+        self.rotation_check.toggled.connect(self.toggle_rotation_field)
+        rotation_layout.addWidget(self.rotation_check)
+        layout.addLayout(rotation_layout)
+        
+        self.rotation_url_layout = QHBoxLayout()
+        self.rotation_url_layout.addWidget(QLabel("URL для ротации:"))
+        self.rotation_url_input = QLineEdit()
+        self.rotation_url_input.setPlaceholderText("http://proxy.example.com/changeip")
+        self.rotation_url_input.setEnabled(False)
+        self.rotation_url_layout.addWidget(self.rotation_url_input)
+        layout.addLayout(self.rotation_url_layout)
+        
         # Кнопка тестирования прокси
         self.test_proxy_btn = QPushButton("🔍 Тестировать прокси")
         self.test_proxy_btn.clicked.connect(self.test_proxy)
@@ -202,7 +218,13 @@ class ProxySettingsGroup(QGroupBox):
         self.proxy_server_input.setEnabled(enabled)
         self.proxy_username_input.setEnabled(enabled)
         self.proxy_password_input.setEnabled(enabled)
+        self.rotation_check.setEnabled(enabled)
+        self.rotation_url_input.setEnabled(enabled and self.rotation_check.isChecked())
         self.test_proxy_btn.setEnabled(enabled)
+        
+    def toggle_rotation_field(self, enabled):
+        """Включает/выключает поле URL ротации"""
+        self.rotation_url_input.setEnabled(enabled)
         
     def test_proxy(self):
         """Тестирование прокси соединения"""
@@ -244,11 +266,17 @@ class ProxySettingsGroup(QGroupBox):
         if not self.proxy_check.isChecked():
             return None
             
-        return {
+        settings = {
             'server': self.proxy_server_input.text().strip(),
             'username': self.proxy_username_input.text().strip(),
             'password': self.proxy_password_input.text().strip()
         }
+        
+        # Добавляем URL ротации если включено
+        if self.rotation_check.isChecked() and self.rotation_url_input.text().strip():
+            settings['rotation_url'] = self.rotation_url_input.text().strip()
+        
+        return settings
         
     def set_settings(self, server, username="", password=""):
         """Устанавливает настройки прокси"""
