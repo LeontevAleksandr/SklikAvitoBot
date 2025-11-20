@@ -71,10 +71,8 @@ class AvitoParserGUI(QMainWindow):
         # Сигналы от вкладки парсинга
         self.parsing_tab.start_signal.connect(self.start_parsing)
         self.parsing_tab.stop_signal.connect(self.stop_parsing)
-        
         # Сигналы от вкладки URLs
         self.urls_tab.urls_updated.connect(self.on_urls_updated)
-        
         # Сигналы от вкладки настроек
         # self.settings_tab.settings_changed.connect(self.on_settings_changed)
         
@@ -106,6 +104,7 @@ class AvitoParserGUI(QMainWindow):
             self.worker = ParserWorker()
             self.worker.log_signal.connect(self.add_log)
             self.worker.finished_signal.connect(self.parsing_finished)
+            self.worker.ip_rotation_signal.connect(self.update_info) 
             self.worker.stats_signal.connect(self.update_stats)
             self.worker.start()
             
@@ -130,24 +129,14 @@ class AvitoParserGUI(QMainWindow):
             self.add_log(f"❌ Ошибка запуска: {e}", "#FF4444")
             self.parsing_finished(False)
             
-    def stop_parsing(self):
-        """Остановка парсинга"""
-        if self.worker and hasattr(self.worker, 'stop') and self.worker.is_running():
-            self.worker.stop()
-            self.add_log("⏹️ Остановка парсинга...", "#FFAA00")
-        else:
-            self.parsing_finished(False)
+    def add_log(self, message, color="#FFFFFF"):
+        """Добавляет сообщение в лог"""
+        self.parsing_tab.get_log_widget().append_log(message, color)
 
-        
-    def parsing_finished(self, success):
-        """Завершение парсинга"""
-        self.parsing_tab.set_running_state(False)
-        
-        if success:
-            self.add_log("✅ Работа завершена успешно", "#4CAF50")
-        else:
-            self.add_log("❌ Работа завершена с ошибками", "#FF4444")
-            
+    def update_info(self, ip):
+        """Обновление информации по ротациям ip"""
+        self.parsing_tab.info_panel.set_ip(ip)
+
     def update_stats(self, stats_type):
         """Обновление статистики"""
         stats_panel = self.parsing_tab.get_stats_panel()
@@ -165,9 +154,22 @@ class AvitoParserGUI(QMainWindow):
         elif stats_type == 'captcha':
             stats_panel.increment_captchas()
             
-    def add_log(self, message, color="#FFFFFF"):
-        """Добавляет сообщение в лог"""
-        self.parsing_tab.get_log_widget().append_log(message, color)
+    def stop_parsing(self):
+        """Остановка парсинга"""
+        if self.worker and hasattr(self.worker, 'stop') and self.worker.is_running():
+            self.worker.stop()
+            self.add_log("⏹️ Остановка парсинга...", "#FFAA00")
+        else:
+            self.parsing_finished(False)
+        
+    def parsing_finished(self, success):
+        """Завершение парсинга"""
+        self.parsing_tab.set_running_state(False)
+        
+        if success:
+            self.add_log("✅ Работа завершена успешно", "#4CAF50")
+        else:
+            self.add_log("❌ Работа завершена с ошибками", "#FF4444")
         
     def closeEvent(self, event):
         """Обработчик закрытия окна"""

@@ -15,10 +15,11 @@ sys.path.insert(0, str(project_root))
 class ParserWorker(QThread):
     """Поток для выполнения парсинга"""
     
-    log_signal = pyqtSignal(str, str)  # message, color
-    finished_signal = pyqtSignal(bool)  # success
-    stats_signal = pyqtSignal(str)      # stats type: 'session', 'browser', etc.
-    
+    log_signal = pyqtSignal(str, str) # message, color
+    finished_signal = pyqtSignal(bool) # success
+    stats_signal = pyqtSignal(str) # stats type: 'session', 'browser', etc.
+    ip_rotation_signal = pyqtSignal(str) # Текущий ip
+
     def __init__(self):
         super().__init__()
         self._is_running = True
@@ -45,4 +46,4 @@ class ParserWorker(QThread):
         self.log_signal.emit("=" * 60, "#4CAF50")
         self.log_signal.emit("Запуск Avito Parser (одиночный режим)", "#4CAF50")
         self.log_signal.emit("=" * 60, "#4CAF50")
-        results = await start()
+        results = await start(on_ip=self.ip_rotation_signal.emit)
