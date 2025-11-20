@@ -19,13 +19,14 @@ class ParserSettingsGroup(QGroupBox):
         layout = QVBoxLayout(self)
         
         # Режим работы
-        mode_layout = QHBoxLayout()
-        mode_layout.addWidget(QLabel("Режим работы:"))
-        self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["Одиночный запуск", "Конвейер без ожидания"])
-        mode_layout.addWidget(self.mode_combo)
-        mode_layout.addStretch()
-        layout.addLayout(mode_layout)
+        time_layout = QHBoxLayout()
+        time_layout.addWidget(QLabel("Время просмотра объявления (сек.):"))
+        self.time_spin = QSpinBox()
+        self.time_spin.setRange(10, 100)
+        self.time_spin.setValue(10)
+        time_layout.addWidget(self.time_spin)
+        time_layout.addStretch()
+        layout.addLayout(time_layout)
         
         # Количество сессий
         sessions_layout = QHBoxLayout()
@@ -57,7 +58,7 @@ class ParserSettingsGroup(QGroupBox):
     def get_settings(self):
         """Возвращает настройки парсера"""
         return {
-            'mode': 'continuous' if self.mode_combo.currentText() == "Непрерывный режим" else 'single',
+            'ad_view_time': self.time_spin.value(),
             'sessions': self.sessions_spin.value(),
             'min_delay': self.min_delay_spin.value(),
             'max_delay': self.max_delay_spin.value()
@@ -277,9 +278,3 @@ class ProxySettingsGroup(QGroupBox):
             settings['rotation_url'] = self.rotation_url_input.text().strip()
         
         return settings
-        
-    def set_settings(self, server, username="", password=""):
-        """Устанавливает настройки прокси"""
-        self.proxy_server_input.setText(server)
-        self.proxy_username_input.setText(username)
-        self.proxy_password_input.setText(password)

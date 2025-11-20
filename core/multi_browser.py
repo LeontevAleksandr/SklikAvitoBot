@@ -4,7 +4,7 @@
 import asyncio
 import random
 from typing import List
-from parsers.avito_parser import AvitoParser
+from core.avito_parser import AvitoParser
 from utils.logger import setup_logger
 # from config.settings import BROWSERS_COUNT, BROWSER_START_DELAY
 from config.settings_manager import settings_manager
