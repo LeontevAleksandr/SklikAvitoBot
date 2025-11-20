@@ -33,6 +33,8 @@ class SettingsTab(QWidget):
         # Группы настроек
         self.parser_group = ParserSettingsGroup()
         settings_layout.addWidget(self.parser_group)
+
+        
         
         self.multibrowser_group = MultiBrowserSettingsGroup()
         settings_layout.addWidget(self.multibrowser_group)

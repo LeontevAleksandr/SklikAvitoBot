@@ -20,7 +20,7 @@ class ParserSettingsGroup(QGroupBox):
         mode_layout = QHBoxLayout()
         mode_layout.addWidget(QLabel("Режим работы:"))
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["Одиночный запуск", "Непрерывный режим"])
+        self.mode_combo.addItems(["Одиночный запуск", "Конвейер без ожидания"])
         mode_layout.addWidget(self.mode_combo)
         mode_layout.addStretch()
         layout.addLayout(mode_layout)
