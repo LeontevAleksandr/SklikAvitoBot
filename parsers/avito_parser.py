@@ -7,7 +7,6 @@ from utils.helpers import random_delay, human_like_scroll, human_like_mouse_move
 from utils.ip_checker import get_current_ip
 from utils.logger import setup_logger
 from config.settings_manager import settings_manager
-from config.settings import TARGET_URL, SCREENSHOTS_DIR, AD_URLS, AD_VIEW_TIME
 import asyncio
 
 logger = setup_logger(__name__)

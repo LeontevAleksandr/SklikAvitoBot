@@ -2,7 +2,7 @@
 Настройка логирования
 """
 import logging
-from config.settings import LOG_LEVEL, LOG_TO_FILE, LOG_FILE
+from config.settings_manager import settings_manager
 
 
 def setup_logger(name: str = __name__) -> logging.Logger:
@@ -16,7 +16,7 @@ def setup_logger(name: str = __name__) -> logging.Logger:
         Настроенный логгер
     """
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(logging, LOG_LEVEL))
+    logger.setLevel(getattr(logging, settings_manager.logging.level))
     
     # Формат логов
     formatter = logging.Formatter(
@@ -26,14 +26,15 @@ def setup_logger(name: str = __name__) -> logging.Logger:
     
     # Вывод в консоль
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(getattr(logging, LOG_LEVEL))
+    console_handler.setLevel(getattr(logging, settings_manager.logging.level))
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
     # Вывод в файл (опционально)
-    if LOG_TO_FILE:
-        file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
-        file_handler.setLevel(getattr(logging, LOG_LEVEL))
+    log_to_file = settings_manager.logging.to_file
+    if log_to_file:
+        file_handler = logging.FileHandler(settings_manager.logging.log_file, encoding='utf-8')
+        file_handler.setLevel(getattr(logging, settings_manager.logging.level))
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     

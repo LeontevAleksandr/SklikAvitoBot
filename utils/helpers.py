@@ -3,7 +3,7 @@
 """
 import asyncio
 import random
-from config.settings import MIN_DELAY, MAX_DELAY, MIN_SCROLL_DELAY, MAX_SCROLL_DELAY
+from config.settings_manager import settings_manager
 
 
 async def random_delay(min_ms: int = None, max_ms: int = None) -> None:
@@ -14,8 +14,9 @@ async def random_delay(min_ms: int = None, max_ms: int = None) -> None:
         min_ms: Минимальная задержка в миллисекундах
         max_ms: Максимальная задержка в миллисекундах
     """
-    min_ms = min_ms or MIN_DELAY
-    max_ms = max_ms or MAX_DELAY
+
+    min_ms = min_ms or settings_manager.parser.min_delay
+    max_ms = max_ms or settings_manager.parser.max_delay
     delay = random.randint(min_ms, max_ms)
     await asyncio.sleep(delay / 1000)
 
@@ -40,7 +41,9 @@ async def human_like_scroll(page) -> None:
         await page.evaluate(f"window.scrollBy({{top: {scroll_y}, behavior: 'smooth'}})")
         
         # Случайная пауза после скролла
-        await random_delay(MIN_SCROLL_DELAY, MAX_SCROLL_DELAY)
+        min_scroll_delay = settings_manager.parser.min_scroll_delay
+        max_scroll_delay = settings_manager.parser.max_scroll_delay
+        await random_delay(min_scroll_delay, max_scroll_delay)
         
         # Иногда останавливаемся и "читаем"
         if random.random() < 0.3:
