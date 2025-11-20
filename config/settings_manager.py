@@ -150,61 +150,16 @@ class SettingsManager:
         self.logging.screenshots_dir = self.screenshots_dir
         self.logging.log_file = self.logs_dir / "parser.log"
     
-    def load_from_env(self, env_file: str = ".env"):
-        """Загружает настройки из .env файла"""
-        load_dotenv(env_file)
-        
-        # Основные настройки
-        self.parser.target_url = os.getenv("TARGET_URL", "https://www.avito.ru/irkutsk")
-        self.browser.headless = os.getenv("HEADLESS", "False").lower() in ("true", "1", "yes")
-        
-        # Список URL объявлений
-        ad_urls_str = os.getenv("AD_URLS", "")
-        self.parser.ad_urls = [url.strip() for url in ad_urls_str.split(",") if url.strip()]
-        
-        # Время просмотра
-        self.parser.ad_view_time = int(os.getenv("AD_VIEW_TIME", "10"))
-        
-        # Мультибраузерный режим
-        self.multi_browser.browser_count = max(1, min(10, int(os.getenv("BROWSERS_COUNT", "1"))))
-        self.multi_browser.browser_start_delay = int(os.getenv("BROWSER_START_DELAY", "2"))
-        
-        # Задержки
-        self.parser.min_delay = int(os.getenv("MIN_DELAY", "1000"))
-        self.parser.max_delay = int(os.getenv("MAX_DELAY", "3000"))
-        self.parser.min_scroll_delay = int(os.getenv("MIN_SCROLL_DELAY", "800"))
-        self.parser.max_scroll_delay = int(os.getenv("MAX_SCROLL_DELAY", "2000"))
-        
-        # Параметры браузера
-        self.browser.viewport_min_width = int(os.getenv("VIEWPORT_MIN_WIDTH", "1366"))
-        self.browser.viewport_max_width = int(os.getenv("VIEWPORT_MAX_WIDTH", "1920"))
-        self.browser.viewport_min_height = int(os.getenv("VIEWPORT_MIN_HEIGHT", "768"))
-        self.browser.viewport_max_height = int(os.getenv("VIEWPORT_MAX_HEIGHT", "1080"))
-        
-        # Геолокация
-        self.geolocation.longitude = float(os.getenv("GEO_LONGITUDE", "104.2964"))
-        self.geolocation.latitude = float(os.getenv("GEO_LATITUDE", "52.2978"))
-        self.geolocation.timezone = os.getenv("TIMEZONE", "Asia/Irkutsk")
-        
-        # Прокси
-        self.proxy.server = os.getenv("PROXY_SERVER")
-        self.proxy.username = os.getenv("PROXY_USERNAME")
-        self.proxy.password = os.getenv("PROXY_PASSWORD")
-        
-        # Логирование
-        self.logging.level = os.getenv("LOG_LEVEL", "INFO")
-        self.logging.to_file = os.getenv("LOG_TO_FILE", "True").lower() == "true"
-    
     def set_settings(self, settings: Dict[str, Any], urls: List[str]):
         """Обновляет настройки из GUI (gui/settings/tab_window)"""
         
-        # МультиБраузеры - получаем dict из GUI, обновляем поля объекта
+        # Количество браузеров и задержка между ними
         browsers_dict = settings.get('browsers', {})
         if isinstance(browsers_dict, dict):
             self.multi_browser.browser_count = browsers_dict.get('browser_count', self.multi_browser.browser_count)
             self.multi_browser.browser_start_delay = browsers_dict.get('browser_start_delay', self.multi_browser.browser_start_delay)
         
-        # Геолокация - получаем dict из GUI, обновляем поля объекта  
+        # Геолокация  
         geo_dict = settings.get('geolocation', {})
         if isinstance(geo_dict, dict):
             self.geolocation.latitude = geo_dict.get('latitude', self.geolocation.latitude)
@@ -212,7 +167,7 @@ class SettingsManager:
             # timezone обычно не меняется из GUI, но на всякий случай
             self.geolocation.timezone = geo_dict.get('timezone', self.geolocation.timezone)
         
-        # Прокси - получаем dict или None из GUI
+        # Прокси
         proxy_dict = settings.get('proxy')
         if proxy_dict and isinstance(proxy_dict, dict):
             # Если прокси включен в GUI
@@ -229,6 +184,7 @@ class SettingsManager:
         
         
         # Остальные настройки парсера
+        self.parser.ad_view_time = settings.get('ad_view_time', ParserSettings.ad_view_time)
         self.parser.session = settings.get('sessions', self.parser.session)
         self.parser.min_delay = settings.get('min_delay', ParserSettings.min_delay)
         self.parser.max_delay = settings.get('max_delay', ParserSettings.max_delay)

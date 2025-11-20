@@ -9,10 +9,10 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from parsers.avito_parser import AvitoParser
+from core.avito_parser import AvitoParser
 from core.multi_browser import run_multi_browser_mode
-from config.settings import BROWSERS_COUNT
 from utils.logger import setup_logger
+from config.settings_manager import settings_manager
 
 logger = setup_logger(__name__)
 
@@ -50,8 +50,9 @@ async def run_single_browser_mode():
 async def main():
     """Главная функция"""
     # Выбираем режим работы в зависимости от настроек
-    if BROWSERS_COUNT > 1:
-        logger.info(f"🚀 Мультибраузерный режим: {BROWSERS_COUNT} браузеров")
+    browser_count = settings_manager.multi_browser.browser_count
+    if browser_count > 1:
+        logger.info(f"🚀 Мультибраузерный режим: {browser_count} браузеров")
         return await run_multi_browser_mode()
     else:
         logger.info("🔵 Одиночный режим: 1 браузер")

@@ -1,7 +1,6 @@
 """
 Главное окно приложения
 """
-import sys
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, 
                             QTabWidget, QLabel)
 from PyQt6.QtCore import Qt
@@ -11,7 +10,7 @@ from config.settings_manager import settings_manager
 from .urls import UrlManagerTab
 from .settings import SettingsTab
 from .parsing import ParsingTab
-from .workers import ParserWorker
+from .worker import ParserWorker
 
 
 class AvitoParserGUI(QMainWindow):
