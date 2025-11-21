@@ -5,10 +5,10 @@ import random
 from utils.ip_rotator import rotate_ip
 from utils.ip_checker import get_current_ip
 
-async def run_parser():
+async def run_parser(callbacks: dict = None):
     """Запуск одного парсера"""
     try:
-        async with AvitoParser() as parser:
+        async with AvitoParser(callbacks) as parser:
             result = await parser.parse()
             
             # logger.info("=" * 60)
@@ -31,22 +31,31 @@ async def run_parser():
     # logger.info("Работа завершена успешно")
     return 0
 
-async def start(on_ip=None):
-    
+async def start(callbacks: dict = None):
+    # Коллбэки для триггера GUI
+    callbacks = callbacks or {}
+
     # Количество сессий
     sessions = settings_manager.parser.session
     for session_num in range(sessions):
+        if 'on_session' in callbacks and callbacks['on_session']:
+            callbacks['on_session'](session_num + 1, sessions)
+
         # Получение ip и отображение
         ip = get_current_ip()
-        if on_ip and ip != "unknown":
-            on_ip(ip)
+        if 'on_ip' in callbacks and callbacks['on_ip']:
+            if ip != "unknown":
+                callbacks['on_ip'](ip)
 
         # Запуск браузеров(парсеров) в текущей сессии
         browser_count = settings_manager.multi_browser.browser_count
         start_delay = settings_manager.multi_browser.browser_start_delay
         tasks = []
         for i in range(browser_count):
-            task = asyncio.create_task(run_parser())
+            if 'on_browser' in callbacks and callbacks['on_browser']:
+                callbacks['on_browser'](i + 1, browser_count)
+            
+            task = asyncio.create_task(run_parser(callbacks))
             tasks.append(task)
             
             if i < browser_count - 1:

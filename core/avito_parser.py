@@ -13,14 +13,14 @@ logger = setup_logger(__name__)
 class AvitoParser:
     """Парсер для сайта Avito"""
     
-    def __init__(self, url: str = settings_manager.parser.target_url):
+    def __init__(self, callbacks: dict = None):
         """
         Инициализация парсера
         
         Args:
             url: URL для парсинга
         """
-        self.url = url
+        self.callbacks = callbacks or {}
         self.browser_manager = BrowserManager()
     
     async def __aenter__(self):
@@ -70,9 +70,8 @@ class AvitoParser:
         """
         logger.info(f"Начало парсинга")
         
-        result = {
+        result = { # Пока не используется
             "success": False,
-            "url": self.url,
             "captcha_detected": False,
             "error": None,
             "visited_ads": []
@@ -97,11 +96,16 @@ class AvitoParser:
                         # Переход на объявление
                         await page.goto(ad_url, wait_until="domcontentloaded", timeout=30000)
                         logger.info(f"Объявление {idx} загружено")
+
+                        # Тригерим счетчик просмотров
+                        if self.callbacks: self.callbacks['on_view']()
                         
                         # Проверка на капчу
                         if await self.check_captcha(page):
                             logger.warning(f"⚠️ КАПЧА на объявлении {idx}!")
                             result["captcha_detected"] = True
+                            # Тригерим счетчик капчи
+                            if self.callbacks: self.callbacks['on_captcha']()
                             break
                         
                         logger.info(f"✅ Объявление {idx} открыто успешно")
@@ -110,6 +114,9 @@ class AvitoParser:
                         ad_view_time = settings_manager.parser.ad_view_time
                         logger.info(f"Просмотр объявления {ad_view_time} секунд...")
                         await asyncio.sleep(ad_view_time)
+
+                        # Тригерим счетчик успешных просмотров
+                        if self.callbacks: self.callbacks['on_success']()
                         
                         result["visited_ads"].append({
                             "url": ad_url,
@@ -123,6 +130,8 @@ class AvitoParser:
                             "success": False,
                             "error": str(e)
                         })
+                        # Тригерим счетчик ошибок
+                        if self.callbacks: self.callbacks['on_error']()
             else:
                 logger.info("Объявления для посещения не указаны")
             

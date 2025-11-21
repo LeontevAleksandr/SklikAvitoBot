@@ -1,8 +1,8 @@
 """
 Виджеты для вкладки парсинга
 """
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                            QLabel, QGroupBox, QGridLayout, QLineEdit)
+from PyQt6.QtWidgets import (QHBoxLayout, QPushButton, 
+                            QLabel, QGroupBox, QGridLayout)
 from PyQt6.QtCore import pyqtSignal
 
 
@@ -48,24 +48,10 @@ class InfoPanel(QGroupBox):
         # Текущий IP
         self.ip_label = QLabel("IP: Не определен")
         layout.addWidget(self.ip_label, 0, 0)
-
-        # # Счетчик смен IP
-        # self.browsers_label = QLabel("Смен IP: 0")
-        # layout.addWidget(self.browsers_label, 0, 1)
         
     def set_ip(self, ip_address: str):
         """Устанавливает текущий IP"""
         self.ip_label.setText(f"IP: {ip_address}")
-        
-    # def increment_ip_change(self):
-    #     """Увеличивает счетчик смен IP"""
-    #     self.ip_change_count += 1
-    #     self.change_count_label.setText(f"Смен IP: {str(self.ip_change_count)}")
-        
-    # def reset_counter(self):
-    #     """Сбрасывает счетчик"""
-    #     self.ip_change_count = 0
-    #     self.change_count_label.setText("Смен IP: 0")
 
 
 class StatsPanel(QGroupBox):
@@ -83,7 +69,7 @@ class StatsPanel(QGroupBox):
         self.sessions_label = QLabel("Сессии: 0")
         layout.addWidget(self.sessions_label, 0, 0)
         
-        self.browsers_label = QLabel("Браузеры: 0")
+        self.browsers_label = QLabel("Браузеров запущено в текущей сессии: 0")
         layout.addWidget(self.browsers_label, 0, 1)
         
         self.views_label = QLabel("Просмотры: 0")
@@ -100,8 +86,6 @@ class StatsPanel(QGroupBox):
         
     def reset_stats(self):
         """Сброс статистики"""
-        self.sessions = 0
-        self.browsers = 0
         self.views = 0
         self.success = 0
         self.errors = 0
@@ -110,22 +94,18 @@ class StatsPanel(QGroupBox):
         
     def update_display(self):
         """Обновление отображения"""
-        self.sessions_label.setText(f"Сессии: {self.sessions}")
-        self.browsers_label.setText(f"Браузеры: {self.browsers}")
         self.views_label.setText(f"Просмотры: {self.views}")
         self.success_label.setText(f"Успешно: {self.success}")
         self.errors_label.setText(f"Ошибки: {self.errors}")
         self.captchas_label.setText(f"Капчи: {self.captchas}")
         
-    def increment_sessions(self):
-        """Увеличивает счетчик сессий"""
-        self.sessions += 1
-        self.update_display()
+    def update_sessions(self, current, total):
+        """Обновляет счетчик сессий"""
+        self.sessions_label.setText(f"Сессии: {current}/{total}")
         
-    def increment_browsers(self):
-        """Увеличивает счетчик браузеров"""
-        self.browsers += 1
-        self.update_display()
+    def update_browsers(self, current, total):
+        """Обновляет счетчик браузеров"""
+        self.browsers_label.setText(f"Браузеров запущено в текущей сессии: {current}/{total}")
         
     def increment_views(self):
         """Увеличивает счетчик просмотров"""

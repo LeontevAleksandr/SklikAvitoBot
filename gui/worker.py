@@ -17,8 +17,10 @@ class ParserWorker(QThread):
     
     log_signal = pyqtSignal(str, str) # message, color
     finished_signal = pyqtSignal(bool) # success
-    stats_signal = pyqtSignal(str) # stats type: 'session', 'browser', etc.
-    ip_rotation_signal = pyqtSignal(str) # Текущий ip
+    sessions_signal = pyqtSignal(int, int)
+    browsers_signal = pyqtSignal(int, int)
+    stats_signal = pyqtSignal(str) # stats type: 'view', 'errors', etc.
+    ip_signal = pyqtSignal(str) # Текущий ip
 
     def __init__(self):
         super().__init__()
@@ -44,6 +46,38 @@ class ParserWorker(QThread):
     async def _run_async(self):
         """Асинхронная задача"""
         self.log_signal.emit("=" * 60, "#4CAF50")
-        self.log_signal.emit("Запуск Avito Parser (одиночный режим)", "#4CAF50")
+        self.log_signal.emit("Запуск Avito Parser", "#4CAF50")
         self.log_signal.emit("=" * 60, "#4CAF50")
-        results = await start(on_ip=self.ip_rotation_signal.emit)
+
+        callbacks = {
+            'on_session': self.update_sessions,
+            'on_browser': self.update_browsers,
+            'on_view': self.increment_views,
+            'on_success': self.increment_success, 
+            'on_error': self.increment_errors,
+            'on_ip': self.rotate_ip
+        }
+
+        results = await start(callbacks)
+    
+    # Функции для коллбэков
+    def update_sessions(self, current, total):
+        self.sessions_signal.emit(current, total)
+
+    def update_browsers(self, current, total):
+        self.browsers_signal.emit(current, total)
+
+    def increment_views(self):
+        self.stats_signal.emit('view')
+    
+    def increment_success(self):
+        self.stats_signal.emit('success')
+    
+    def increment_errors(self):
+        self.stats_signal.emit('error')
+
+    def increment_captcha(self):
+        self.stats_signal.emit('captcha')
+
+    def rotate_ip(self, ip):
+        self.ip_signal.emit(ip)

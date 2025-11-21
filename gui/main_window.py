@@ -71,8 +71,10 @@ class AvitoParserGUI(QMainWindow):
         # Сигналы от вкладки парсинга
         self.parsing_tab.start_signal.connect(self.start_parsing)
         self.parsing_tab.stop_signal.connect(self.stop_parsing)
+        
         # Сигналы от вкладки URLs
         self.urls_tab.urls_updated.connect(self.on_urls_updated)
+        
         # Сигналы от вкладки настроек
         # self.settings_tab.settings_changed.connect(self.on_settings_changed)
         
@@ -104,8 +106,10 @@ class AvitoParserGUI(QMainWindow):
             self.worker = ParserWorker()
             self.worker.log_signal.connect(self.add_log)
             self.worker.finished_signal.connect(self.parsing_finished)
-            self.worker.ip_rotation_signal.connect(self.update_info) 
+            self.worker.sessions_signal.connect(self.update_sessions)
+            self.worker.browsers_signal.connect(self.update_browsers)
             self.worker.stats_signal.connect(self.update_stats)
+            self.worker.ip_signal.connect(self.update_ip) 
             self.worker.start()
             
             # Логируем настройки
@@ -123,7 +127,6 @@ class AvitoParserGUI(QMainWindow):
 
             # Обновляем UI
             self.parsing_tab.set_running_state(True)
-            self.add_log("✅ Парсинг запущен успешно", "#4CAF50")
             
         except Exception as e:
             self.add_log(f"❌ Ошибка запуска: {e}", "#FF4444")
@@ -133,19 +136,25 @@ class AvitoParserGUI(QMainWindow):
         """Добавляет сообщение в лог"""
         self.parsing_tab.get_log_widget().append_log(message, color)
 
-    def update_info(self, ip):
+    def update_ip(self, ip):
         """Обновление информации по ротациям ip"""
         self.parsing_tab.info_panel.set_ip(ip)
 
-    def update_stats(self, stats_type):
+    def update_sessions(self, current: int, total: int):
+        """Обновляет счетчик сессий"""
+        stats_panel = self.parsing_tab.get_stats_panel()
+        stats_panel.update_sessions(current, total)
+
+    def update_browsers(self, current: int, total: int):
+        """Обновляет счетчик браузеров"""
+        stats_panel = self.parsing_tab.get_stats_panel()
+        stats_panel.update_browsers(current, total)
+
+    def update_stats(self, stats_type: str):
         """Обновление статистики"""
         stats_panel = self.parsing_tab.get_stats_panel()
         
-        if stats_type == 'session':
-            stats_panel.increment_sessions()
-        elif stats_type == 'browser':
-            stats_panel.increment_browsers()
-        elif stats_type == 'view':
+        if stats_type == 'view':
             stats_panel.increment_views()
         elif stats_type == 'success':
             stats_panel.increment_success()

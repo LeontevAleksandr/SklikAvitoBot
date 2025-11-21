@@ -41,7 +41,7 @@ class ParserSettingsGroup(QGroupBox):
         
         # Задержки между сессиями
         delays_layout = QHBoxLayout()
-        delays_layout.addWidget(QLabel("Задержка между сессиями (мин):"))
+        delays_layout.addWidget(QLabel("Задержка между сессиями (сек.):"))
         self.min_delay_spin = QSpinBox()
         self.min_delay_spin.setRange(1, 60)
         self.min_delay_spin.setValue(2)
