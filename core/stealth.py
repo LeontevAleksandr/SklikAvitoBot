@@ -1,15 +1,42 @@
 """
-Anti-detection техники для обхода защиты
+Anti-detection техники для обхода защиты (расширенная версия)
 """
 
 STEALTH_SCRIPT = """
-// Переопределяем webdriver
+// ============ КРИТИЧЕСКАЯ СЕКЦИЯ: Скрытие автоматизации ============
+
+// Переопределяем webdriver (самое важное!)
 Object.defineProperty(navigator, 'webdriver', {
-    get: () => undefined
+    get: () => undefined,
+    configurable: true
 });
 
 // Удаляем webdriver из прототипа
 delete Object.getPrototypeOf(navigator).webdriver;
+
+// Скрываем __driver_evaluate, __webdriver_evaluate и другие флаги Selenium/Playwright
+['__driver_evaluate', '__webdriver_evaluate', '__selenium_evaluate', '__fxdriver_evaluate',
+ '__driver_unwrapped', '__webdriver_unwrapped', '__selenium_unwrapped', '__fxdriver_unwrapped',
+ '__webdriver_script_fn', '__webdriver_script_func', '__webdriver_script_function',
+ '_selenium', '_webdriver', '_phantom', '__nightmare', 'callPhantom', 'callSelenium',
+ '_Selenium_IDE_Recorder'].forEach(prop => {
+    delete window[prop];
+    delete navigator[prop];
+    delete document[prop];
+});
+
+// Переопределяем navigator.permissions
+const originalQuery = window.navigator.permissions.query;
+window.navigator.permissions.query = (parameters) => (
+    parameters.name === 'notifications' ?
+        Promise.resolve({ state: Notification.permission }) :
+        originalQuery(parameters)
+);
+
+// Маскируем Playwright-специфичные свойства
+delete window.__playwright;
+delete window.__pw_manual;
+delete window.__PW_inspect;
 
 // Добавляем chrome объект с реалистичными свойствами
 window.chrome = {
@@ -269,6 +296,122 @@ console.log = function() {
     if (arguments[0] && arguments[0].toString().includes('puppeteer')) return;
     return originalLog.apply(this, arguments);
 };
+
+// ============ ДОПОЛНИТЕЛЬНЫЕ ANTI-DETECT ТЕХНИКИ ============
+
+// Переопределяем navigator.maxTouchPoints для десктопа
+Object.defineProperty(navigator, 'maxTouchPoints', {
+    get: () => 0
+});
+
+// Переопределяем ontouchstart
+delete window.ontouchstart;
+
+// Скрываем headless режим
+Object.defineProperty(navigator, 'headless', {
+    get: () => false
+});
+
+// Переопределяем userAgentData (новый API Chrome)
+if (navigator.userAgentData) {
+    Object.defineProperty(navigator, 'userAgentData', {
+        get: () => ({
+            brands: [
+                { brand: 'Google Chrome', version: '120' },
+                { brand: 'Chromium', version: '120' },
+                { brand: 'Not_A Brand', version: '8' }
+            ],
+            mobile: false,
+            platform: 'Windows'
+        })
+    });
+}
+
+// Маскируем iframe (часто используется для детекции)
+Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+    get: function() {
+        return window;
+    }
+});
+
+// Переопределяем Function.prototype.toString для скрытия модификаций
+const oldToString = Function.prototype.toString;
+Function.prototype.toString = function() {
+    if (this === navigator.webdriver) {
+        return 'function webdriver() { [native code] }';
+    }
+    return oldToString.apply(this, arguments);
+};
+
+// Скрываем автоматизацию от CDP (Chrome DevTools Protocol)
+if (window.chrome && window.chrome.runtime) {
+    Object.defineProperty(window.chrome.runtime, 'connect', {
+        value: function() {
+            return {
+                onMessage: { addListener: () => {}, removeListener: () => {} },
+                postMessage: () => {},
+                disconnect: () => {}
+            };
+        }
+    });
+}
+
+// Эмуляция батареи (важно для мобильных устройств, но и для десктопа)
+if (!navigator.getBattery) {
+    navigator.getBattery = () => Promise.resolve({
+        charging: true,
+        chargingTime: 0,
+        dischargingTime: Infinity,
+        level: 1,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => true
+    });
+}
+
+// Переопределяем Notification.permission
+try {
+    Object.defineProperty(Notification, 'permission', {
+        get: () => 'default'
+    });
+} catch (e) {}
+
+// Маскируем navigator.keyboard и navigator.credentials (могут выдавать автоматизацию)
+if (!navigator.keyboard) {
+    navigator.keyboard = {
+        getLayoutMap: () => Promise.resolve(new Map()),
+        lock: () => Promise.resolve(),
+        unlock: () => {}
+    };
+}
+
+// Добавляем реалистичный navigator.mediaDevices
+if (!navigator.mediaDevices) {
+    navigator.mediaDevices = {
+        getUserMedia: () => Promise.reject(new Error('Permission denied')),
+        enumerateDevices: () => Promise.resolve([
+            { deviceId: 'default', kind: 'audioinput', label: '', groupId: '' },
+            { deviceId: 'default', kind: 'audiooutput', label: '', groupId: '' }
+        ]),
+        getSupportedConstraints: () => ({
+            aspectRatio: true,
+            deviceId: true,
+            echoCancellation: true,
+            facingMode: true,
+            frameRate: true,
+            height: true,
+            width: true
+        })
+    };
+}
+
+// Блокируем определение через Performance API
+const originalPerformanceNow = Performance.prototype.now;
+Performance.prototype.now = function() {
+    return originalPerformanceNow.apply(this) + Math.random() * 0.1;
+};
+
+console.log('[Stealth] Anti-detection loaded successfully');
 """
 
 

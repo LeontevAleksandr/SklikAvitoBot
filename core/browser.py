@@ -48,18 +48,24 @@ class BrowserManager:
         browser_args = self.settings.browser.browser_args.copy()
         browser_args.append(f'--window-size={viewport_width},{viewport_height}')
         
-        # Запускаем браузер
+        # Запускаем браузер с улучшенными anti-detect параметрами
         try:
             self.browser = await self.playwright.chromium.launch(
                 headless=settings_manager.browser.headless,
                 channel="chrome",
-                args=browser_args
+                args=browser_args,
+                # Дополнительные anti-detect параметры
+                chromium_sandbox=False,
+                downloads_path=None,
+                slow_mo=random.randint(50, 150),  # Замедление для естественности
             )
         except Exception as e:
             logger.warning(f"Не удалось запустить Chrome, используем Chromium: {e}")
             self.browser = await self.playwright.chromium.launch(
                 headless=settings_manager.browser.headless,
-                args=browser_args
+                args=browser_args,
+                chromium_sandbox=False,
+                slow_mo=random.randint(50, 150),
             )
         
         # Настройка прокси
@@ -71,13 +77,13 @@ class BrowserManager:
                 proxy_config["password"] = settings_manager.proxy.password
             logger.info(f"Используется прокси: {settings_manager.proxy.server}")
         
-        # Создаем контекст с рандомными параметрами
+        # Создаем контекст с улучшенными anti-detect параметрами
         self.context = await self.browser.new_context(
             user_agent=random.choice(settings_manager.browser.user_agents),
             viewport={'width': viewport_width, 'height': viewport_height},
             screen={'width': viewport_width, 'height': viewport_height},
             locale='ru-RU',
-            # timezone_id=settings_manager.geolocation.timezone,
+            timezone_id='Europe/Moscow',  # Включаем timezone
             permissions=['geolocation'],
             geolocation={
                 'longitude': settings_manager.geolocation.longitude,
@@ -90,8 +96,26 @@ class BrowserManager:
             is_mobile=False,
             java_script_enabled=True,
             extra_http_headers=settings_manager.browser.http_headers,
-            proxy=proxy_config
+            proxy=proxy_config,
+            # Дополнительные anti-detect параметры
+            ignore_https_errors=True,
+            bypass_csp=True,  # Обход Content Security Policy
+            accept_downloads=False,
         )
+
+        # Добавляем маскировку WebRTC для скрытия реального IP
+        await self.context.add_init_script("""
+            // Маскируем WebRTC
+            const getOrig = RTCPeerConnection.prototype.setLocalDescription;
+            RTCPeerConnection.prototype.setLocalDescription = function(...args) {
+                return getOrig.apply(this, args);
+            };
+
+            // Блокируем enumerate devices
+            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                navigator.mediaDevices.enumerateDevices = () => Promise.resolve([]);
+            }
+        """)
         
         logger.info(f"Браузер запущен (viewport: {viewport_width}x{viewport_height})")
     
