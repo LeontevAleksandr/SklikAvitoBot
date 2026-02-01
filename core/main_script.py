@@ -27,9 +27,16 @@ async def start(callbacks: dict = None):
     # Коллбэки для триггера GUI
     callbacks = callbacks or {}
 
+    # Функция проверки остановки
+    should_stop = callbacks.get('should_stop', lambda: False)
+
     # Количество сессий
     sessions = settings_manager.parser.session
     for session_num in range(sessions):
+        # Проверка на остановку
+        if should_stop():
+            break
+
         if 'on_session' in callbacks and callbacks['on_session']:
             callbacks['on_session'](session_num + 1, sessions)
 
@@ -44,17 +51,27 @@ async def start(callbacks: dict = None):
         start_delay = settings_manager.multi_browser.browser_start_delay
         tasks = []
         for i in range(browser_count):
+            # Проверка на остановку перед запуском каждого браузера
+            if should_stop():
+                break
+
             if 'on_browser' in callbacks and callbacks['on_browser']:
                 callbacks['on_browser'](i + 1, browser_count)
-            
+
             task = asyncio.create_task(run_parser(callbacks))
             tasks.append(task)
-            
+
             if i < browser_count - 1:
                 await asyncio.sleep(start_delay)
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+        # Если есть запущенные задачи, ждем их завершения
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Проверка на остановку перед ротацией IP
+        if should_stop():
+            break
+
         # Вызов IP- ротации у прокси
         rotation_url = settings_manager.proxy.rotation_url
         if rotation_url:
@@ -65,4 +82,9 @@ async def start(callbacks: dict = None):
             min_delay = settings_manager.parser.min_delay
             max_delay = settings_manager.parser.max_delay
             delay = random.randint(min_delay, max_delay)
-            await asyncio.sleep(delay)
+
+            # Проверяем остановку во время задержки (разбиваем на мелкие интервалы)
+            for _ in range(delay):
+                if should_stop():
+                    break
+                await asyncio.sleep(1)

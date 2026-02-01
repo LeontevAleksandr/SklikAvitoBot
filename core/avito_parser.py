@@ -293,6 +293,12 @@ class AvitoParser:
                 logger.info(f"Переход к объявлениям (найдено {len(ad_urls)} URL, порядок рандомизирован)")
 
                 for idx, ad_url in enumerate(ad_urls, 1):
+                    # Проверка на остановку перед каждым объявлением
+                    should_stop = self.callbacks.get('should_stop', lambda: False)
+                    if should_stop():
+                        logger.info("🛑 Получен сигнал остановки, прерываем обработку")
+                        break
+
                     logger.info(f"Открытие объявления {idx}/{len(ad_urls)}: {ad_url}")
 
                     try:

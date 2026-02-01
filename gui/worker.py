@@ -36,8 +36,11 @@ class ParserWorker(QThread):
 
     def stop(self):
         """Останавливает выполнение парсинга"""
+        if not self._is_running:
+            return  # Уже остановлен
+
         self._is_running = False
-        self.log_signal.emit("🛑 Получена команда остановки...", "#FFAA00")
+        self.log_signal.emit("🛑 Получена команда остановки, ожидаем завершения...", "#FFAA00")
         
     def is_running(self):
         """Проверяет, выполняется ли парсинг"""
@@ -53,12 +56,21 @@ class ParserWorker(QThread):
             'on_session': self.update_sessions,
             'on_browser': self.update_browsers,
             'on_view': self.increment_views,
-            'on_success': self.increment_success, 
+            'on_success': self.increment_success,
             'on_error': self.increment_errors,
-            'on_ip': self.rotate_ip
+            'on_ip': self.rotate_ip,
+            'should_stop': lambda: not self._is_running  # Функция проверки остановки
         }
 
-        results = await start(callbacks)
+        try:
+            results = await start(callbacks)
+            self.finished_signal.emit(True)
+        except asyncio.CancelledError:
+            self.log_signal.emit("🛑 Парсинг прерван пользователем", "#FFAA00")
+            self.finished_signal.emit(False)
+        except Exception as e:
+            self.log_signal.emit(f"❌ Ошибка парсинга: {e}", "#FF4444")
+            self.finished_signal.emit(False)
     
     # Функции для коллбэков
     def update_sessions(self, current, total):

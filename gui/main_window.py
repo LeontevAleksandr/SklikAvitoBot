@@ -166,8 +166,9 @@ class AvitoParserGUI(QMainWindow):
     def stop_parsing(self):
         """Остановка парсинга"""
         if self.worker and hasattr(self.worker, 'stop') and self.worker.is_running():
-            self.worker.stop()
             self.add_log("⏹️ Остановка парсинга...", "#FFAA00")
+            self.worker.stop()
+            # Воркер сам вызовет finished_signal когда завершится
         else:
             self.parsing_finished(False)
         
@@ -184,5 +185,9 @@ class AvitoParserGUI(QMainWindow):
         """Обработчик закрытия окна"""
         if self.worker and self.worker.isRunning():
             self.worker.stop()
-            self.worker.wait()
+            # Даем 3 секунды на корректное завершение
+            if not self.worker.wait(3000):
+                # Если не завершился, принудительно останавливаем
+                self.worker.terminate()
+                self.worker.wait()
         event.accept()
